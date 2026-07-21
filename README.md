@@ -54,7 +54,14 @@ Share the spreadsheet with the service account email.
 npm run dev
 ```
 
-Sign in with `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+## Access
+
+Login is Google-only (`@meavo.com`). Access is granted via the **Zeron Materials** tool card in [meavo.app](https://meavo.app) gateway admin — same pattern as Clock, Hols, and the other satellite apps.
+
+```bash
+# In meavo-gateway:
+npx tsx --env-file=.env.local scripts/seed-zeron-tool-card.ts
+```
 
 ## Expected export columns
 
@@ -83,8 +90,7 @@ See [docs/deployment.md](docs/deployment.md).
 
 - `npm run dev` — local development
 - `npm run build` — production build
-- `npm run db:push` — apply schema
-- `npm run db:seed` — seed admin user
+- `npm run db:execute-zeron` — apply Zeron tables (idempotent SQL)
 - `npm test` — run parser/outlier tests
 
 ## Cron sync

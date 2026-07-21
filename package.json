@@ -14,7 +14,7 @@
     "db:push": "echo 'Do not prisma db push against the shared Meavo Neon DB from this app — use scripts/add-zeron-tables.sql (idempotent).' && exit 1",
     "db:execute-zeron": "prisma db execute --file scripts/add-zeron-tables.sql --schema prisma/schema.prisma",
     "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:seed": "echo 'Users and tool-card access are managed in meavo-gateway. Run scripts/seed-zeron-tool-card.ts there.' && exit 1",
     "test": "tsx --test src/lib/**/*.test.ts"
   },
   "prisma": {
@@ -22,7 +22,6 @@
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",
-    "bcryptjs": "^2.4.3",
     "googleapis": "^144.0.0",
     "next": "^15.1.0",
     "next-auth": "^5.0.0-beta.25",
@@ -31,7 +30,6 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",

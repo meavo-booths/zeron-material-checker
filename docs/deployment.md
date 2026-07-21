@@ -22,7 +22,18 @@ npm run db:seed
 
 Longer term, these models should be moved into `meavo-db` and consumed via `@meavo/db`.
 
-## 2. Vercel project
+## 2. Gateway tool card
+
+Grant access via the meavo.app gateway (same as other apps):
+
+```bash
+cd ~/Desktop/CursorAI/meavo-gateway
+npx tsx --env-file=.env.local scripts/seed-zeron-tool-card.ts
+```
+
+Admins get the **Zeron Materials** card automatically. Grant other users access from the gateway admin UI.
+
+## 3. Vercel project
 
 ```bash
 vercel link          # meavo-gateway / zeron-material-checker
@@ -37,12 +48,14 @@ vercel --prod
 | `DATABASE_URL` | Neon pooled connection string |
 | `AUTH_SECRET` | Long random secret |
 | `AUTH_URL` | `https://zeron.meavo.app` |
-| `ADMIN_EMAIL` | Bootstrap admin email |
-| `ADMIN_PASSWORD` | Bootstrap admin password (seed only) |
+| `AUTH_GOOGLE_ID` | Same Google OAuth client as other Meavo apps |
+| `AUTH_GOOGLE_SECRET` | Same Google OAuth secret |
+| `ZERON_TOOL_CARD_ID` | `seed-zeron-tool` |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Sheets service account JSON |
 | `GOOGLE_SHEETS_SPREADSHEET_ID` | Workbook ID |
 | `CRON_SECRET` | Protects `/api/cron/sync-sheet` |
 | `NEXT_PUBLIC_APP_URL` | `https://zeron.meavo.app` |
+| `NEXT_PUBLIC_GATEWAY_URL` | `https://meavo.app` |
 
 ## 4. DNS
 
@@ -52,16 +65,17 @@ zeron.meavo.app  →  cname.vercel-dns.com
 
 Then in Vercel → Project → Domains → add `zeron.meavo.app`.
 
-## 5. Google Sheets
+## 5. Google OAuth
 
-Share the workbook with the service account email from `GOOGLE_SERVICE_ACCOUNT_JSON`.
+Authorized JavaScript origins / redirect URIs must include:
 
-## 6. Post-deploy seed
-
-```bash
-# With production DATABASE_URL available locally:
-ADMIN_EMAIL=... ADMIN_PASSWORD=... npm run db:seed
+```text
+https://zeron.meavo.app
 ```
+
+## 6. Post-deploy
+
+No local admin seed. Users must exist in gateway and hold the Zeron tool card.
 
 ## 7. Smoke checks
 

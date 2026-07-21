@@ -1,11 +1,11 @@
-import Link from "next/link";
-import { auth } from "@/lib/auth";
+import { requireZeronAccess } from "@/lib/meavo-auth";
 import { getOutlierDashboardData } from "@/lib/domain/dashboard";
 import {
   formatCurrency,
   formatDate,
   formatPercent,
 } from "@/lib/analysis/outliers";
+import Link from "next/link";
 
 type SearchParams = Promise<{
   itemCode?: string;
@@ -18,7 +18,7 @@ export default async function DashboardPage({
 }: {
   searchParams: SearchParams;
 }) {
-  await auth();
+  await requireZeronAccess();
   const params = await searchParams;
 
   const { summaries, stats } = await getOutlierDashboardData({

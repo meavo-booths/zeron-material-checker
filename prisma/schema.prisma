@@ -7,10 +7,84 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ---- Identity & access (shared Meavo tables; owned by gateway) ----
+// Local subset for auth + ToolCardAccess checks. Never db:push this schema.
+
 enum SystemRole {
   ADMIN
   USER
 }
+
+enum ToolCardKind {
+  LINK
+  APP_ACCESS
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String?
+  email         String     @unique
+  passwordHash  String?
+  emailVerified DateTime?
+  image         String?
+  systemRole    SystemRole @default(USER)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  accounts   Account[]
+  cardAccess ToolCardAccess[]
+  importRuns ZeronImportRun[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model ToolCard {
+  id           String           @id @default(cuid())
+  name         String
+  description  String
+  url          String
+  iconKey      String?
+  kind         ToolCardKind     @default(LINK)
+  linkedAppKey String?
+  sortOrder    Int              @default(0)
+  isActive     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  access       ToolCardAccess[]
+
+  @@unique([linkedAppKey])
+}
+
+model ToolCardAccess {
+  id        String   @id @default(cuid())
+  userId    String
+  cardId    String
+  createdAt DateTime @default(now())
+
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card ToolCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cardId])
+}
+
+// ---- Zeron Material Checker (owner: zeron) ----
 
 enum ZeronImportSourceType {
   GOOGLE_SHEET_TAB
@@ -22,18 +96,6 @@ enum ZeronImportStatus {
   SUCCESS
   PARTIAL
   FAILED
-}
-
-model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  name         String?
-  passwordHash String?
-  systemRole   SystemRole @default(USER)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  importRuns ZeronImportRun[]
 }
 
 model ZeronSheetState {

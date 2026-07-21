@@ -1,12 +1,12 @@
-import { auth } from "@/lib/auth";
+import { requireZeronAccess } from "@/lib/meavo-auth";
 import { getSheetSyncOverview } from "@/lib/domain/sync-sheet";
 import { canManageImports } from "@/lib/permissions";
 import { CsvUploadForm } from "@/components/csv-upload-form";
 import { SyncSheetButton } from "@/components/sync-sheet-button";
 
 export default async function SyncPage() {
-  const session = await auth();
-  const canImport = session?.user?.id
+  const session = await requireZeronAccess();
+  const canImport = session.user?.id
     ? await canManageImports(session.user.id)
     : false;
   const overview = await getSheetSyncOverview();

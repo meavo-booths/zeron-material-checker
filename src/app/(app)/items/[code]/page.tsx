@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { requireZeronAccess } from "@/lib/meavo-auth";
 import { getItemDetail } from "@/lib/domain/dashboard";
 import {
   formatCurrency,
@@ -13,7 +13,7 @@ export default async function ItemDetailPage({
 }: {
   params: Promise<{ code: string }>;
 }) {
-  await auth();
+  await requireZeronAccess();
   const { code } = await params;
   const itemCode = decodeURIComponent(code);
   const { deliveries, analysis } = await getItemDetail(itemCode);
