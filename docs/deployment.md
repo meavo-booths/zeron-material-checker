@@ -13,14 +13,14 @@ zeron.meavo.app (Vercel)
 
 ## 1. Database
 
-This app currently owns its own Prisma schema (not yet merged into `meavo-db`).
-Use a **dedicated Neon Postgres** database (do not `db:push` this schema against the shared Meavo DB).
+Zeron tables live on the **shared Meavo Neon Postgres**. Apply them with the idempotent SQL script (do **not** run `prisma db push` from this app — a partial schema would drop other apps' tables):
 
 ```bash
-# After DATABASE_URL is set locally:
-npm run db:push
+npm run db:execute-zeron
 npm run db:seed
 ```
+
+Longer term, these models should be moved into `meavo-db` and consumed via `@meavo/db`.
 
 ## 2. Vercel project
 

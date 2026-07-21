@@ -34,10 +34,10 @@ npm install
 cp .env.example .env
 ```
 
-3. Set `DATABASE_URL` to a Neon Postgres connection string, then:
+3. Apply Zeron tables with the idempotent SQL script (never `prisma db push` against the shared Meavo DB):
 
 ```bash
-npm run db:push
+npm run db:execute-zeron
 npm run db:seed
 ```
 
@@ -60,7 +60,7 @@ Sign in with `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 
 | Column | Field |
 |--------|-------|
-| A | Номер на процесс |
+| A | Номер на процес |
 | B | Дата |
 | C | Код артикул |
 | D | Име артикул |

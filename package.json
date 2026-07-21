@@ -11,7 +11,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push",
+    "db:push": "echo 'Do not prisma db push against the shared Meavo Neon DB from this app — use scripts/add-zeron-tables.sql (idempotent).' && exit 1",
+    "db:execute-zeron": "prisma db execute --file scripts/add-zeron-tables.sql --schema prisma/schema.prisma",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "test": "tsx --test src/lib/**/*.test.ts"
