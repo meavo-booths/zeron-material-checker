@@ -1,6 +1,8 @@
 # Zeron Material Checker
 
-Meavo-style web app for reviewing Zeron delivery exports and highlighting unit-cost outliers by item code.
+Meavo web app for reviewing Zeron delivery exports and highlighting unit-cost outliers by item code.
+
+**Production:** [https://zeron.meavo.app](https://zeron.meavo.app)
 
 ## Features
 
@@ -13,9 +15,10 @@ Meavo-style web app for reviewing Zeron delivery exports and highlighting unit-c
 ## Stack
 
 - Next.js 15 App Router
-- Prisma + SQLite (local dev)
+- Prisma + Postgres (Neon)
 - NextAuth credentials login
 - Google Sheets API (service account)
+- Vercel (`fra1`)
 
 ## Setup
 
@@ -31,7 +34,7 @@ npm install
 cp .env.example .env
 ```
 
-3. Push schema and seed admin user:
+3. Set `DATABASE_URL` to a Neon Postgres connection string, then:
 
 ```bash
 npm run db:push
@@ -57,7 +60,7 @@ Sign in with `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 
 | Column | Field |
 |--------|-------|
-| A | Номер на процес |
+| A | Номер на процесс |
 | B | Дата |
 | C | Код артикул |
 | D | Име артикул |
@@ -72,6 +75,10 @@ Sign in with `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 
 Attachment in Zeron is inferred from column L: non-empty means yes.
 
+## Deploy
+
+See [docs/deployment.md](docs/deployment.md).
+
 ## Scripts
 
 - `npm run dev` — local development
@@ -85,5 +92,5 @@ Attachment in Zeron is inferred from column L: non-empty means yes.
 `vercel.json` registers `/api/cron/sync-sheet` every 6 hours. Protect it with `CRON_SECRET`.
 
 ```bash
-curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/sync-sheet
+curl -H "Authorization: Bearer $CRON_SECRET" https://zeron.meavo.app/api/cron/sync-sheet
 ```
