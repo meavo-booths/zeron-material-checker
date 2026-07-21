@@ -128,9 +128,12 @@ export function analyzeItemOutliers(
     baselineUnitCost: baseline,
     outlierCount: outliers.length,
     acceptedCount,
-    outliers: outliers.sort(
-      (a, b) => b.deliveryDate.getTime() - a.deliveryDate.getTime(),
-    ),
+    outliers: outliers.sort((a, b) => {
+      if (b.deviationPct !== a.deviationPct) {
+        return b.deviationPct - a.deviationPct;
+      }
+      return b.deliveryDate.getTime() - a.deliveryDate.getTime();
+    }),
   };
 }
 
@@ -160,6 +163,11 @@ export function analyzeAllItemOutliers(
   }
 
   return summaries.sort((a, b) => {
+    const aMax = a.outliers[0]?.deviationPct ?? 0;
+    const bMax = b.outliers[0]?.deviationPct ?? 0;
+    if (bMax !== aMax) {
+      return bMax - aMax;
+    }
     if (b.outlierCount !== a.outlierCount) {
       return b.outlierCount - a.outlierCount;
     }
