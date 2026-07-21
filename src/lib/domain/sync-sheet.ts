@@ -14,22 +14,9 @@ import {
 import { parseDeliveryRowsFromMatrix, parseDeliveryRowsFromCsv } from "@/lib/import/deliveries";
 import { emptyImportResult, type ImportResult } from "@/lib/import/types";
 import { prisma } from "@/lib/prisma";
+import type { SheetSyncResult, TabSyncStatus } from "@/lib/domain/sync-types";
 
-export type TabSyncStatus = {
-  tabName: string;
-  status: "imported" | "skipped" | "failed";
-  rowCount: number;
-  errorCount: number;
-  message?: string;
-};
-
-export type SheetSyncResult = {
-  spreadsheetId: string;
-  tabs: TabSyncStatus[];
-  totalImported: number;
-  totalSkipped: number;
-  totalFailed: number;
-};
+export type { SheetSyncResult, TabSyncStatus } from "@/lib/domain/sync-types";
 
 function resolveImportStatus(errorCount: number, created: number): ZeronImportStatus {
   if (errorCount > 0 && created === 0) return ZeronImportStatus.FAILED;

@@ -31,9 +31,10 @@ model User {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
-  accounts   Account[]
-  cardAccess ToolCardAccess[]
-  importRuns ZeronImportRun[]
+  accounts             Account[]
+  cardAccess           ToolCardAccess[]
+  importRuns           ZeronImportRun[]
+  acceptedUnitCosts    ZeronAcceptedUnitCost[]
 }
 
 model Account {
@@ -169,4 +170,23 @@ model ZeronDeliveryRow {
   @@index([processNumber])
   @@index([attachmentPresent])
   @@index([importRunId])
+}
+
+/// Accepted unit-cost levels for an item. Outliers at these prices are ignored
+/// on future imports/analysis until revoked.
+model ZeronAcceptedUnitCost {
+  id           String   @id @default(cuid())
+  itemCode     String
+  itemName     String   @default("")
+  unitCost     String
+  note         String   @default("")
+  deliveryRowId String?
+  markedById   String?
+  createdAt    DateTime @default(now())
+
+  markedBy User? @relation(fields: [markedById], references: [id], onDelete: SetNull)
+
+  @@unique([itemCode, unitCost])
+  @@index([itemCode])
+  @@index([markedById])
 }

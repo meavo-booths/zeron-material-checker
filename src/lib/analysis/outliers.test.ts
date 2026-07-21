@@ -4,7 +4,30 @@ import {
   analyzeItemOutliers,
   OUTLIER_THRESHOLD,
 } from "@/lib/analysis/outliers";
+import { analyzeUnitMismatches } from "@/lib/analysis/unit-mismatch";
 import { parseDeliveryRowsFromMatrix } from "@/lib/import/deliveries";
+
+function point(
+  partial: Partial<Parameters<typeof analyzeItemOutliers>[0][number]> & {
+    id: string;
+    unitCost: number;
+  },
+) {
+  return {
+    processNumber: partial.processNumber ?? `P-${partial.id}`,
+    deliveryDate: partial.deliveryDate ?? new Date("2024-01-01"),
+    itemCode: partial.itemCode ?? "0114",
+    itemName: partial.itemName ?? "Item",
+    quantity: partial.quantity ?? 10,
+    unit: partial.unit ?? "бр",
+    totalCost: partial.totalCost ?? null,
+    warehouse: partial.warehouse ?? "Варна",
+    attachmentPresent: partial.attachmentPresent ?? false,
+    sourceTab: partial.sourceTab ?? "tab",
+    sourceFileName: partial.sourceFileName ?? null,
+    ...partial,
+  };
+}
 
 test("parseDeliveryRowsFromMatrix maps Bulgarian headers", () => {
   const matrix = [
@@ -46,51 +69,53 @@ test("parseDeliveryRowsFromMatrix maps Bulgarian headers", () => {
   assert.equal(rows[0]?.attachmentPresent, true);
 });
 
-test("analyzeItemOutliers flags prices above threshold", () => {
+test("analyzeItemOutliers uses 20% threshold", () => {
   const summary = analyzeItemOutliers(
     [
-      {
-        id: "1",
-        processNumber: "P-1",
-        deliveryDate: new Date("2024-01-01"),
-        itemCode: "0114",
-        itemName: "Item",
-        unitCost: 10,
-        warehouse: "Варна",
-        attachmentPresent: true,
-        sourceTab: "tab",
-        sourceFileName: "a.pdf",
-      },
-      {
-        id: "2",
-        processNumber: "P-2",
-        deliveryDate: new Date("2024-02-01"),
-        itemCode: "0114",
-        itemName: "Item",
-        unitCost: 10.2,
-        warehouse: "Варна",
-        attachmentPresent: false,
-        sourceTab: "tab",
-        sourceFileName: null,
-      },
-      {
-        id: "3",
-        processNumber: "P-3",
-        deliveryDate: new Date("2024-03-01"),
-        itemCode: "0114",
-        itemName: "Item",
-        unitCost: 15,
-        warehouse: "Варна",
-        attachmentPresent: true,
-        sourceTab: "tab",
-        sourceFileName: "b.pdf",
-      },
+      point({ id: "1", unitCost: 10, deliveryDate: new Date("2024-01-01") }),
+      point({ id: "2", unitCost: 10.2, deliveryDate: new Date("2024-02-01") }),
+      point({ id: "3", unitCost: 11.5, deliveryDate: new Date("2024-03-01") }),
+      point({ id: "4", unitCost: 15, deliveryDate: new Date("2024-04-01") }),
     ],
-    OUTLIER_THRESHOLD,
+    { threshold: OUTLIER_THRESHOLD },
   );
 
   assert.ok(summary);
+  assert.equal(OUTLIER_THRESHOLD, 0.2);
   assert.equal(summary.outlierCount, 1);
-  assert.equal(summary.outliers[0]?.processNumber, "P-3");
-  assert.ok(summary.averageUnitCost < 11);
+  assert.equal(summary.outliers[0]?.processNumber, "P-4");
+});
+
+test("accepted unit costs suppress outliers", () => {
+  const summary = analyzeItemOutliers(
+    [
+      point({ id: "1", unitCost: 10 }),
+      point({ id: "2", unitCost: 10.1 }),
+      point({ id: "3", unitCost: 15 }),
+    ],
+    { acceptedUnitCosts: [15] },
+  );
+
+  assert.ok(summary);
+  assert.equal(summary.outlierCount, 0);
+  assert.equal(summary.acceptedCount, 1);
+});
+
+test("analyzeUnitMismatches flags reciprocal qty/price errors", () => {
+  const findings = analyzeUnitMismatches([
+    point({ id: "1", quantity: 5, unitCost: 30, deliveryDate: new Date("2024-01-01") }),
+    point({ id: "2", quantity: 5, unitCost: 31, deliveryDate: new Date("2024-02-01") }),
+    point({ id: "3", quantity: 4, unitCost: 29, deliveryDate: new Date("2024-03-01") }),
+    point({
+      id: "4",
+      quantity: 150,
+      unitCost: 1,
+      deliveryDate: new Date("2024-04-01"),
+      processNumber: "P-BAD",
+    }),
+  ]);
+
+  assert.ok(findings.length >= 1);
+  assert.equal(findings[0]?.processNumber, "P-BAD");
+  assert.equal(findings[0]?.reason, "reciprocal_qty_price");
 });

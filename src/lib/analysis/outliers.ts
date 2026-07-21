@@ -1,4 +1,4 @@
-export const OUTLIER_THRESHOLD = 0.1;
+export const OUTLIER_THRESHOLD = 0.2;
 
 export type DeliveryPricePoint = {
   id: string;
@@ -7,6 +7,9 @@ export type DeliveryPricePoint = {
   itemCode: string;
   itemName: string;
   unitCost: number;
+  quantity: number | null;
+  unit: string | null;
+  totalCost: number | null;
   warehouse: string | null;
   attachmentPresent: boolean;
   sourceTab: string | null;
@@ -16,6 +19,7 @@ export type DeliveryPricePoint = {
 export type OutlierDelivery = DeliveryPricePoint & {
   deviationPct: number;
   baselinePrice: number;
+  accepted: boolean;
 };
 
 export type ItemOutlierSummary = {
@@ -25,6 +29,7 @@ export type ItemOutlierSummary = {
   averageUnitCost: number;
   baselineUnitCost: number;
   outlierCount: number;
+  acceptedCount: number;
   outliers: OutlierDelivery[];
 };
 
@@ -43,11 +48,38 @@ function average(values: number[]): number {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
+/** Normalize unit cost for accepted-price matching. */
+export function normalizeUnitCostKey(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "";
+  return value.toFixed(6).replace(/\.?0+$/, "") || "0";
+}
+
+export function isAcceptedUnitCost(
+  unitCost: number,
+  acceptedCosts: Iterable<number>,
+  tolerance = 0.005,
+): boolean {
+  if (unitCost <= 0) return false;
+  for (const accepted of acceptedCosts) {
+    if (accepted <= 0) continue;
+    if (Math.abs(unitCost - accepted) / accepted <= tolerance) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function analyzeItemOutliers(
   deliveries: DeliveryPricePoint[],
-  threshold = OUTLIER_THRESHOLD,
+  options?: {
+    threshold?: number;
+    acceptedUnitCosts?: number[];
+  },
 ): ItemOutlierSummary | null {
   if (deliveries.length === 0) return null;
+
+  const threshold = options?.threshold ?? OUTLIER_THRESHOLD;
+  const acceptedUnitCosts = options?.acceptedUnitCosts ?? [];
 
   const prices = deliveries.map((d) => d.unitCost).filter((p) => p > 0);
   if (prices.length === 0) return null;
@@ -57,15 +89,24 @@ export function analyzeItemOutliers(
 
   const outliers: OutlierDelivery[] = [];
   const nonOutlierPrices: number[] = [];
+  let acceptedCount = 0;
 
   for (const delivery of deliveries) {
+    const accepted = isAcceptedUnitCost(delivery.unitCost, acceptedUnitCosts);
     const deviationPct = Math.abs(delivery.unitCost - baseline) / baseline;
+
     if (deviationPct > threshold) {
-      outliers.push({
-        ...delivery,
-        deviationPct,
-        baselinePrice: baseline,
-      });
+      if (accepted) {
+        acceptedCount++;
+        nonOutlierPrices.push(delivery.unitCost);
+      } else {
+        outliers.push({
+          ...delivery,
+          deviationPct,
+          baselinePrice: baseline,
+          accepted: false,
+        });
+      }
     } else {
       nonOutlierPrices.push(delivery.unitCost);
     }
@@ -86,6 +127,7 @@ export function analyzeItemOutliers(
     averageUnitCost,
     baselineUnitCost: baseline,
     outlierCount: outliers.length,
+    acceptedCount,
     outliers: outliers.sort(
       (a, b) => b.deliveryDate.getTime() - a.deliveryDate.getTime(),
     ),
@@ -94,6 +136,7 @@ export function analyzeItemOutliers(
 
 export function analyzeAllItemOutliers(
   deliveries: DeliveryPricePoint[],
+  acceptedByItemCode: Map<string, number[]> = new Map(),
   threshold = OUTLIER_THRESHOLD,
 ): ItemOutlierSummary[] {
   const byCode = new Map<string, DeliveryPricePoint[]>();
@@ -106,8 +149,11 @@ export function analyzeAllItemOutliers(
 
   const summaries: ItemOutlierSummary[] = [];
 
-  for (const group of byCode.values()) {
-    const summary = analyzeItemOutliers(group, threshold);
+  for (const [itemCode, group] of byCode.entries()) {
+    const summary = analyzeItemOutliers(group, {
+      threshold,
+      acceptedUnitCosts: acceptedByItemCode.get(itemCode) ?? [],
+    });
     if (summary && summary.outlierCount > 0) {
       summaries.push(summary);
     }
@@ -137,5 +183,12 @@ export function formatDate(value: Date): string {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
+  }).format(value);
+}
+
+export function formatQuantity(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return "—";
+  return new Intl.NumberFormat("bg-BG", {
+    maximumFractionDigits: 4,
   }).format(value);
 }

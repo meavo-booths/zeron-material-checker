@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { syncSheetAction } from "@/app/actions/sync";
-import type { SheetSyncResult } from "@/lib/domain/sync-sheet";
+import type { SheetSyncResult } from "@/lib/domain/sync-types";
 
 export function SyncSheetButton({ force = false }: { force?: boolean }) {
   const [pending, startTransition] = useTransition();

@@ -50,7 +50,7 @@ export default async function SyncPage() {
           </div>
         ) : (
           <p className="text-sm text-meavo-grey">
-            Only admins can trigger sheet sync. Ask an admin to run sync or grant you access.
+            Users with Zeron access can trigger sheet sync and CSV upload.
           </p>
         )}
       </div>

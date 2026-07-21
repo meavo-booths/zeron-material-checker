@@ -5,6 +5,7 @@ import {
   formatDate,
   formatPercent,
 } from "@/lib/analysis/outliers";
+import { MarkCorrectButton } from "@/components/mark-correct-button";
 import Link from "next/link";
 
 type SearchParams = Promise<{
@@ -32,15 +33,17 @@ export default async function DashboardPage({
       <div>
         <h1 className="text-2xl font-semibold text-meavo-ink">Outlier dashboard</h1>
         <p className="mt-1 text-sm text-meavo-grey">
-          Items where delivery unit cost deviates by more than 10% from the baseline.
+          Items where delivery unit cost deviates by more than 20% from the baseline.
+          Mark accepted prices as correct so future imports ignore the same level.
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <StatCard label="Deliveries" value={stats.totalDeliveries} />
         <StatCard label="Items analyzed" value={stats.totalItems} />
         <StatCard label="Items with outliers" value={stats.itemsWithOutliers} />
         <StatCard label="Outlier rows" value={stats.totalOutlierRows} />
+        <StatCard label="Accepted price levels" value={stats.acceptedPriceLevels} />
         <StatCard label="Synced tabs" value={stats.importedTabs} />
       </div>
 
@@ -90,7 +93,7 @@ export default async function DashboardPage({
       {summaries.length === 0 ? (
         <div className="card">
           <p className="text-sm text-meavo-grey">
-            No outliers found for the current filters. Sync the Google Sheet or upload a CSV from the Sync page.
+            No open outliers for the current filters. Sync the Google Sheet or upload a CSV from the Sync page.
           </p>
         </div>
       ) : (
@@ -103,9 +106,12 @@ export default async function DashboardPage({
                     {item.itemCode} · {item.itemName || "—"}
                   </h2>
                   <p className="mt-1 text-sm text-meavo-grey">
-                    {item.deliveryCount} deliveries · average excluding outliers:{" "}
+                    {item.deliveryCount} deliveries · average excluding open outliers:{" "}
                     <strong>{formatCurrency(item.averageUnitCost)}</strong> · baseline median:{" "}
                     <strong>{formatCurrency(item.baselineUnitCost)}</strong>
+                    {item.acceptedCount > 0
+                      ? ` · ${item.acceptedCount} previously accepted`
+                      : ""}
                   </p>
                 </div>
                 <Link href={`/items/${encodeURIComponent(item.itemCode)}`} className="btn-secondary">
@@ -123,6 +129,7 @@ export default async function DashboardPage({
                       <th>Deviation</th>
                       <th>Attachment in Zeron</th>
                       <th>Source tab</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -136,6 +143,12 @@ export default async function DashboardPage({
                         </td>
                         <td>{outlier.attachmentPresent ? "Yes" : "No"}</td>
                         <td>{outlier.sourceTab ?? "—"}</td>
+                        <td>
+                          <MarkCorrectButton
+                            deliveryRowId={outlier.id}
+                            itemCode={item.itemCode}
+                          />
+                        </td>
                       </tr>
                     ))}
                   </tbody>
