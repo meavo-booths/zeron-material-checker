@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SystemRole {
+  ADMIN
+  USER
+}
+
+enum ZeronImportSourceType {
+  GOOGLE_SHEET_TAB
+  CSV_UPLOAD
+}
+
+enum ZeronImportStatus {
+  PENDING
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String?
+  passwordHash String?
+  systemRole   SystemRole @default(USER)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  importRuns ZeronImportRun[]
+}
+
+model ZeronSheetState {
+  id            String    @id @default("default")
+  spreadsheetId String    @default("")
+  lastSyncedAt  DateTime?
+  lastError     String?
+  updatedAt     DateTime  @updatedAt
+}
+
+model ZeronImportRun {
+  id            String                @id @default(cuid())
+  sourceType    ZeronImportSourceType
+  sourceName    String
+  status        ZeronImportStatus     @default(PENDING)
+  triggeredById String?
+  rowCount      Int                   @default(0)
+  skippedCount  Int                   @default(0)
+  errorCount    Int                   @default(0)
+  errors        String                @default("[]")
+  createdAt     DateTime              @default(now())
+  completedAt   DateTime?
+
+  triggeredBy  User?              @relation(fields: [triggeredById], references: [id], onDelete: SetNull)
+  deliveryRows ZeronDeliveryRow[]
+  importedTabs ZeronImportedTab[]
+
+  @@index([createdAt])
+  @@index([sourceType])
+}
+
+model ZeronImportedTab {
+  id            String   @id @default(cuid())
+  spreadsheetId String
+  tabName       String
+  contentHash   String
+  rowCount      Int      @default(0)
+  importedAt    DateTime @default(now())
+  importRunId   String?
+
+  importRun ZeronImportRun? @relation(fields: [importRunId], references: [id], onDelete: SetNull)
+
+  @@unique([spreadsheetId, tabName])
+  @@index([spreadsheetId])
+}
+
+model ZeronDeliveryRow {
+  id                String                @id @default(cuid())
+  importRunId       String
+  sourceKey         String                @unique
+  processNumber     String
+  deliveryDate      DateTime
+  itemCode          String
+  itemName          String                @default("")
+  stockQuantity     String?
+  unit              String?
+  unitCost          String
+  totalCost         String?
+  warehouse         String?
+  extraCost         String?
+  itemType          String?
+  sourceFileName    String?
+  attachmentPresent Boolean               @default(false)
+  sourceTab         String?
+  sourceType        ZeronImportSourceType
+
+  importRun ZeronImportRun @relation(fields: [importRunId], references: [id], onDelete: Cascade)
+
+  @@index([itemCode])
+  @@index([deliveryDate])
+  @@index([processNumber])
+  @@index([attachmentPresent])
+  @@index([importRunId])
+}
