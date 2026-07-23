@@ -128,6 +128,93 @@ export async function getItemDetail(itemCode: string) {
   };
 }
 
+export async function getMaterialsCatalog(filters?: {
+  itemCode?: string;
+  itemName?: string;
+}): Promise<{
+  materials: Array<{
+    itemCode: string;
+    itemName: string;
+    deliveryCount: number;
+    averageUnitCost: number;
+    latestUnitCost: number;
+    latestDeliveryDate: Date;
+    latestProcessNumber: string;
+    unit: string | null;
+    changePct: number;
+  }>;
+  stats: {
+    totalMaterials: number;
+    totalDeliveries: number;
+  };
+}> {
+  const deliveries = await loadDeliveryPricePoints({
+    itemCode: filters?.itemCode,
+  });
+
+  const nameFilter = filters?.itemName?.trim().toLowerCase();
+  const byCode = new Map<string, DeliveryPricePoint[]>();
+
+  for (const delivery of deliveries) {
+    if (
+      nameFilter &&
+      !delivery.itemName.toLowerCase().includes(nameFilter) &&
+      !delivery.itemCode.toLowerCase().includes(nameFilter)
+    ) {
+      continue;
+    }
+    const list = byCode.get(delivery.itemCode) ?? [];
+    list.push(delivery);
+    byCode.set(delivery.itemCode, list);
+  }
+
+  const materials = [...byCode.entries()]
+    .map(([itemCode, rows]) => {
+      const prices = rows.map((r) => r.unitCost).filter((p) => p > 0);
+      const averageUnitCost =
+        prices.length > 0
+          ? prices.reduce((sum, value) => sum + value, 0) / prices.length
+          : 0;
+
+      const latest = [...rows].sort((a, b) => {
+        const byDate = b.deliveryDate.getTime() - a.deliveryDate.getTime();
+        if (byDate !== 0) return byDate;
+        return b.id.localeCompare(a.id);
+      })[0]!;
+
+      const latestName =
+        [...rows]
+          .sort((a, b) => b.deliveryDate.getTime() - a.deliveryDate.getTime())
+          .find((r) => r.itemName.trim())?.itemName ?? latest.itemName;
+
+      const changePct =
+        averageUnitCost > 0
+          ? (latest.unitCost - averageUnitCost) / averageUnitCost
+          : 0;
+
+      return {
+        itemCode,
+        itemName: latestName,
+        deliveryCount: rows.length,
+        averageUnitCost,
+        latestUnitCost: latest.unitCost,
+        latestDeliveryDate: latest.deliveryDate,
+        latestProcessNumber: latest.processNumber,
+        unit: latest.unit,
+        changePct,
+      };
+    })
+    .sort((a, b) => a.itemCode.localeCompare(b.itemCode, "bg"));
+
+  return {
+    materials,
+    stats: {
+      totalMaterials: materials.length,
+      totalDeliveries: deliveries.length,
+    },
+  };
+}
+
 export async function getUnitMismatchDashboardData(filters?: {
   itemCode?: string;
 }) {
