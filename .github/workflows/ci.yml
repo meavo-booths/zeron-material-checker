@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, staging]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      # postinstall runs `prisma generate`, which only reads the local schema and
+      # never connects to a database, so no secrets are needed.
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      # Advisory only, matching the other Meavo repos: this app has no ESLint
+      # config, and bare `next lint` prompts interactively without one, which
+      # would hang the runner. Promote to blocking once a config exists.
+      - name: Lint
+        continue-on-error: true
+        run: |
+          if ls eslint.config.* .eslintrc* >/dev/null 2>&1; then
+            npm run lint --if-present
+          else
+            echo "No ESLint config found; skipping lint."
+          fi
