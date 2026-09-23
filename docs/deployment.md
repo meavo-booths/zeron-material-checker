@@ -1,5 +1,7 @@
 # Deploying to zeron.meavo.app (Vercel)
 
+**Release gate:** Follow [RELEASE_POLICY.md](../RELEASE_POLICY.md). Prepare changes on `feat/*` branches and validate through `staging`. Production deployments, rollbacks, live database changes, release tags, and production configuration changes require specific human approval for that action and revision; this runbook is not approval. Use isolated non-production data and integrations for preview checks.
+
 Zeron Material Checker runs on **Vercel** (`fra1`), same pattern as Clock, Hols, and Assembly.
 
 ## Architecture
@@ -37,9 +39,11 @@ Admins get the **Zeron Materials** card automatically. Grant other users access 
 
 ```bash
 vercel link          # meavo-gateway / zeron-material-checker
-vercel env pull .env.local
-vercel --prod
+vercel env pull .env.preview.local --environment=preview
+# Verify isolated preview database/integrations before running the app.
 ```
+
+Push a `feat/*` branch for its preview and open the PR against `staging`. A production release from `staging` to `main` requires specific human approval under [RELEASE_POLICY.md](../RELEASE_POLICY.md).
 
 ## 3. Required environment variables
 
