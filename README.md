@@ -1,5 +1,7 @@
 # Zeron Material Checker
 
+**Release gate:** Follow [RELEASE_POLICY.md](RELEASE_POLICY.md). Prepare changes on `feat/*` branches and validate through `staging`. Production deployments, rollbacks, live database changes, release tags, and production configuration changes require specific human approval for that action and revision; this runbook is not approval. Use isolated non-production data and integrations for preview checks.
+
 Meavo web app for reviewing Zeron delivery exports and highlighting unit-cost outliers by item code.
 
 **Production:** [https://zeron.meavo.app](https://zeron.meavo.app)
