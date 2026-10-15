@@ -1,4 +1,9 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "chore/publish-agent-instructions": false
+    }
+  },
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["fra1"],
   "framework": "nextjs",
