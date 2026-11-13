@@ -11,16 +11,16 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
-    "db:push": "echo 'Do not prisma db push against the shared Meavo Neon DB from this app — use scripts/add-zeron-tables.sql (idempotent).' && exit 1",
-    "db:execute-zeron": "prisma db execute --file scripts/add-zeron-tables.sql --schema prisma/schema.prisma",
+    "db:push": "echo 'db:push is disabled. The shared schema lives in the meavo-db repo (github.com/meavo-booths/meavo-db) — make changes there.' && exit 1",
     "db:studio": "prisma studio",
     "db:seed": "echo 'Users and tool-card access are managed in meavo-gateway. Run scripts/seed-zeron-tool-card.ts there.' && exit 1",
     "test": "tsx --test src/lib/**/*.test.ts"
   },
   "prisma": {
-    "schema": "prisma/schema.prisma"
+    "schema": "node_modules/@meavo/db/prisma/schema.prisma"
   },
   "dependencies": {
+    "@meavo/db": "git+https://github.com/meavo-booths/meavo-db.git#v0.111.0",
     "@prisma/client": "^6.1.0",
     "googleapis": "^144.0.0",
     "next": "^15.1.0",
