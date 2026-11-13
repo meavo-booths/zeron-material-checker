@@ -24,8 +24,8 @@ jobs:
           node-version: "24"
           cache: npm
 
-      # postinstall runs `prisma generate`, which only reads the local schema and
-      # never connects to a database, so no secrets are needed.
+      # postinstall runs `prisma generate`, which reads the shared schema from
+      # @meavo/db and never connects to a database, so no secrets are needed.
       - run: npm ci
 
       - name: Typecheck

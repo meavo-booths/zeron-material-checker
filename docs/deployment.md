@@ -10,19 +10,18 @@ Zeron Material Checker runs on **Vercel** (`fra1`), same pattern as Clock, Hols,
 zeron.meavo.app (Vercel)
    ├── Next.js admin UI
    ├── Google Sheets sync + CSV import
-   └── Postgres (Neon) — Zeron* tables
+   └── Postgres (Neon) — Zeron* tables (schema in meavo-db, consumed as @meavo/db)
 ```
 
 ## 1. Database
 
-Zeron tables live on the **shared Meavo Neon Postgres**. Apply them with the idempotent SQL script (do **not** run `prisma db push` from this app — a partial schema would drop other apps' tables):
+Zeron tables live on the **shared Meavo Neon Postgres**. Their schema is declared in [meavo-db](https://github.com/meavo-booths/meavo-db) (`prisma/schema.prisma`, Zeron section) and consumed here as `@meavo/db`, pinned to a release tag in `package.json`.
 
-```bash
-npm run db:execute-zeron
-npm run db:seed
-```
+Nothing is applied from this repo: it carries no Prisma schema and no SQL scripts, `npm run db:push` is disabled, and the Vercel build only runs `prisma generate` (which reads `node_modules/@meavo/db/prisma/schema.prisma` and never connects to a database) before `next build`.
 
-Longer term, these models should be moved into `meavo-db` and consumed via `@meavo/db`.
+Schema changes, also for tables that only Zeron uses, are written and applied in meavo-db. Under [RELEASE_POLICY.md](../RELEASE_POLICY.md) their SQL reaches production only as part of an approved meavo-db release, from its tag; afterwards re-pin `@meavo/db` here through a PR into `staging`. A deployment of this app needs every column of the pinned schema's `User`, `Account`, `ToolCardAccess` and `Zeron*` tables to exist in the database it connects to, so pin only tags whose SQL has been applied there.
+
+`meavo-db` is a public repository, so `npm install` on Vercel and in CI needs no token or deploy key.
 
 ## 2. Gateway tool card
 
