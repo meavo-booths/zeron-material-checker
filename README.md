@@ -17,14 +17,22 @@ Meavo web app for reviewing Zeron delivery exports and highlighting unit-cost ou
 ## Stack
 
 - Next.js 15 App Router
-- Prisma + Postgres (Neon)
+- Prisma + Postgres (Neon), schema from `@meavo/db` (see [Database](#database))
 - NextAuth credentials login
 - Google Sheets API (service account)
 - Vercel (`fra1`)
 
+## Database
+
+All MEAVO apps use one Postgres database (Neon). Its schema lives in **[meavo-db](https://github.com/meavo-booths/meavo-db)**, the only repository allowed to alter the database. This app consumes it as `@meavo/db`, pinned to a release tag in `package.json`, and Prisma reads `node_modules/@meavo/db/prisma/schema.prisma`.
+
+Nothing is applied from this repo. It carries no Prisma schema and no SQL scripts; `npm install` and `npm run build` only run `prisma generate`, which reads the installed schema and never connects to a database. `npm run db:push` is disabled.
+
+Schema changes, also for the `Zeron*` tables that only this app writes, are made in meavo-db and released under its policy. Then re-pin `@meavo/db` here through a PR into `staging` (see [AGENTS.md](AGENTS.md)).
+
 ## Setup
 
-1. Install dependencies:
+1. Install dependencies (this also generates the Prisma client from `@meavo/db`):
 
 ```bash
 npm install
@@ -36,12 +44,7 @@ npm install
 cp .env.example .env
 ```
 
-3. Apply Zeron tables with the idempotent SQL script (never `prisma db push` against the shared Meavo DB):
-
-```bash
-npm run db:execute-zeron
-npm run db:seed
-```
+3. There is no database setup step in this repo. The Zeron tables are part of the shared schema in meavo-db and are applied from there. Users and tool-card access are managed in meavo-gateway (see [Access](#access)).
 
 4. Configure Google Sheets access in `.env`:
 
@@ -91,8 +94,9 @@ See [docs/deployment.md](docs/deployment.md).
 ## Scripts
 
 - `npm run dev` — local development
-- `npm run build` — production build
-- `npm run db:execute-zeron` — apply Zeron tables (idempotent SQL)
+- `npm run build` — production build (`prisma generate`, then `next build`)
+- `npm run db:generate` — regenerate the Prisma client from `@meavo/db`
+- `npm run db:push` — disabled; schema changes go through meavo-db
 - `npm test` — run parser/outlier tests
 
 ## Cron sync
